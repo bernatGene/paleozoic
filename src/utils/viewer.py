@@ -9,7 +9,7 @@ EYES = -3
 FEED = -4
 
 ASCII_DICT = {WALL: '■', FOOD: '=', NONE: ' ',
-              CELL: '±', BODY: '+', FEED: '0'}
+              CELL: '±', BODY: '+', FEED: 'O'}
 
 DEFAULT_CREATURE = np.array([FEED], dtype=np.int8)
 

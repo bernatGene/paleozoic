@@ -14,6 +14,7 @@ class Labyrinth:
         self.field = np.ones((field_size + 4, field_size + 4), dtype=np.int8)
         self.field_size = field_size
         self.build_walls()
+        self.food_count = 0
         self.grow_food()
 
     def reset_seed(self, seed=0):
@@ -37,7 +38,6 @@ class Labyrinth:
         rows = self.rng.integers(0, self.field_size + 3, food_count)
         cols = self.rng.integers(0, self.field_size + 3, food_count)
         for r, c in zip(rows, cols):
-            if self.field[r][c]:
+            if self.field[r][c] == NONE:
+                self.food_count += 1
                 self.field[r][c] = FOOD
-
-
