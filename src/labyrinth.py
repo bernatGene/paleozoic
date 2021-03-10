@@ -6,7 +6,6 @@ from assets import tiles
 WALL = 0
 FOOD = 127
 NONE = 1
-ASCII_DICT = {WALL: '■', FOOD: '=', NONE: ' '}
 
 
 class Labyrinth:
@@ -28,11 +27,11 @@ class Labyrinth:
         self.field[:, 0:2] = WALL
         self.field[fs + 2:, :] = WALL
         self.field[:, fs + 2:] = WALL
-        rows = range(0, self.field_size, 16) # 16 == tile_size
+        rows = range(0, self.field_size, 16)  # 16 == tile_size
         cols = range(0, self.field_size, 16)
-        coordinates = [(x0+2, y0+2) for x0 in rows for y0 in cols]
+        coordinates = [(x0 + 2, y0 + 2) for x0 in rows for y0 in cols]
         for r, c in coordinates:
-            self.field[r:r+16, c:c+16] = tiles.get_random_tile()
+            self.field[r:r + 16, c:c + 16] = tiles.get_random_tile(self.rng.integers(0, 9999))
 
     def grow_food(self, food_count=100):
         rows = self.rng.integers(0, self.field_size + 3, food_count)
@@ -41,10 +40,4 @@ class Labyrinth:
             if self.field[r][c]:
                 self.field[r][c] = FOOD
 
-    def field_to_string(self):
-        text = ""
-        for row in self.field:
-            for item in row:
-                text += ASCII_DICT[item]
-            text += '\n'
-        return text
+

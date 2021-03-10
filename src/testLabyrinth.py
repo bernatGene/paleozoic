@@ -1,4 +1,7 @@
-import Labyrinth as lab
+import labyrinth as lab
+from utils import viewer
 
 l = lab.Labyrinth()
-print(l.field_to_string())
+v = viewer.Viewer()
+v.register_state(l.field)
+v.print_last_state()
