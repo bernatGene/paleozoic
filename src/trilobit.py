@@ -3,6 +3,8 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
+import constants as C
+
 GAMMA = 0.99
 EPS = np.finfo(np.float32).eps.item()
 
@@ -10,6 +12,7 @@ EPS = np.finfo(np.float32).eps.item()
 class Trilobit:
     def __init__(self, dna="#", lr=0.001, num_acts=3):
         self.dna = dna
+        self.body = None
         self.num_actions = num_acts
         self.model = None
         self.perception = None
@@ -39,9 +42,10 @@ class Trilobit:
         action = layers.Dense(num_actions, activation="softmax")(common)
         critic = layers.Dense(1)(common)
         self.model = keras.Model(inputs=inputs, outputs=[action, critic])
+        self.build_body()
         self.perception = perception
 
-    def decision(self):
+    def act(self):
         action_probs, critic_value = self.model(np.expand_dims(self.perception, 0))
         action = np.random.choice(self.num_actions, p=np.squeeze(action_probs))
         self.action_probs_memories.append(tf.math.log(action_probs[0, action]))
@@ -51,7 +55,8 @@ class Trilobit:
     def react(self, food, perception):
         self.energy += food
         self.energy -= 0.2 * len(self.dna)
-        self.perception = perception
+        if perception is not None:
+            self.perception = perception
         reward = self.energy
         self.rewards_memories.append(reward)
         self.day_reward += reward
@@ -82,9 +87,51 @@ class Trilobit:
                 )
             # Backpropagation
             loss_value = sum(actor_losses) + sum(critic_losses)
+            # print(self.model.trainable_variables)
+            print(loss_value)
             grads = tape.gradient(loss_value, self.model.trainable_variables)
+            print(tape.watched_variables())
+            print(grads)
             self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
             # Clear the loss and reward history
             self.action_probs_memories.clear()
             self.critic_value_memories.clear()
             self.rewards_memories.clear()
+
+    def grow_gene(self, idx_dna, cell_dict, gene_pos):
+        idx_dna += 1
+        if idx_dna >= len(self.dna):
+            return idx_dna
+        gene = self.dna[idx_dna]
+        print(gene)
+        if gene == '-' or (gene_pos in cell_dict):
+            return idx_dna
+        cell_dict[gene_pos] = gene
+        if gene == 'o' or gene == '0':
+            return idx_dna
+        for i in range(4):
+            ori = C.ORIENTATIONS[i]
+            child_gene_pos = (gene_pos[0] + ori[0], gene_pos[1] + ori[1])
+            idx_dna = self.grow_gene(idx_dna, cell_dict, child_gene_pos)
+        return idx_dna
+
+    def build_body(self):
+        gene_pos = (0, 0)
+        cell_dict = {}
+        self.grow_gene(-1, cell_dict, gene_pos)
+        # print(cell_dict)
+        self.array_body(cell_dict)
+
+    def array_body(self, cell_dict):
+        max_r = max([k[0] for k in cell_dict.keys()])
+        min_r = min([k[0] for k in cell_dict.keys()])
+        max_c = max([k[1] for k in cell_dict.keys()])
+        min_c = min([k[1] for k in cell_dict.keys()])
+        rows = max_r - min_r + 1
+        cols = max_c - min_c + 1
+        self.body = np.zeros((rows, cols), dtype=np.int8)
+        for k, v in cell_dict.items():
+            r = k[0] - min_r
+            c = k[1] - min_c
+            # print(k, (r, c))
+            self.body[r, c] = C.CELL_DICT[v]

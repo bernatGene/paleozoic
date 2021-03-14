@@ -1,11 +1,8 @@
 import time
-
 import numpy as np
-from assets import tiles
 
-WALL = 0
-FOOD = 127
-NONE = 1
+from assets import tiles
+import constants as C
 
 
 class Labyrinth:
@@ -24,10 +21,10 @@ class Labyrinth:
 
     def build_walls(self):
         fs = self.field_size
-        self.field[0:2, :] = WALL
-        self.field[:, 0:2] = WALL
-        self.field[fs + 2:, :] = WALL
-        self.field[:, fs + 2:] = WALL
+        self.field[0:2, :] = C.WALL
+        self.field[:, 0:2] = C.WALL
+        self.field[fs + 2:, :] = C.WALL
+        self.field[:, fs + 2:] = C.WALL
         rows = range(0, self.field_size, 16)  # 16 == tile_size
         cols = range(0, self.field_size, 16)
         coordinates = [(x0 + 2, y0 + 2) for x0 in rows for y0 in cols]
@@ -38,6 +35,20 @@ class Labyrinth:
         rows = self.rng.integers(0, self.field_size + 3, food_count)
         cols = self.rng.integers(0, self.field_size + 3, food_count)
         for r, c in zip(rows, cols):
-            if self.field[r][c] == NONE:
+            if self.field[r][c] == C.NONE:
                 self.food_count += 1
-                self.field[r][c] = FOOD
+                self.field[r][c] = C.FOOD
+
+    def crop_at_position(self, pos, shape):
+        return self.field[pos[0]:pos[0]+shape[0], pos[1]:pos[1]+shape[1]].copy()
+
+    def valid_position(self, agent_body, agent_pos):
+        rows, cols = agent_body.shape
+        row, col = (agent_pos[0], agent_pos[1])
+        merged = np.multiply(self.field[row:row+rows, col:col+cols], agent_body)
+        # print(merged)
+        check_wall = np.all(merged < 1)
+        if not check_wall:
+            return False, -1
+        check_food = np.count_nonzero(merged == C.FOOD * C.FEED)
+        return True, check_food

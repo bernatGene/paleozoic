@@ -1,24 +1,14 @@
 import numpy as np
+from src import constants as C
 
-WALL = 0
-FOOD = 127
-NONE = 1
-CELL = -1
-BODY = -2
-EYES = -3
-FEED = -4
-
-ASCII_DICT = {WALL: '■', FOOD: '=', NONE: ' ',
-              CELL: '±', BODY: '+', FEED: 'O'}
-
-DEFAULT_CREATURE = np.array([FEED], dtype=np.int8)
+DEFAULT_CREATURE = np.array([C.HEAD], dtype=np.int8)
 
 
 def field_to_string(field):
     text = ""
     for row in field:
         for item in row:
-            text += ASCII_DICT[item]
+            text += C.ASCII_DICT[item]
         text += '\n'
     return text
 
@@ -28,9 +18,11 @@ class Viewer:
         self.field = None
         self.string_field = ("X" * 64 + '\n') * 64
 
-    def register_state(self, field, creature=DEFAULT_CREATURE, pos=(7, 7)):
+    def register_state(self, field, agent_body=np.ones((1,1))*C.HEAD, agent_pos=(7, 7)):
         ret_field = field.copy()
-        ret_field[pos[0], pos[1]] = creature[0]
+        rows, cols = agent_body.shape
+        row, col = (agent_pos[0], agent_pos[1])
+        ret_field[row:row+rows, col:col+cols] = agent_body
         self.field = ret_field
         self.string_field = field_to_string(self.field)
 

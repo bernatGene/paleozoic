@@ -1,76 +1,49 @@
 import numpy as np
 from labyrinth import Labyrinth
+from trilobit import Trilobit
 
-NORTH = (-1, 0)
-SOUTH = (1, 0)
-EAST = (0, 1)
-WEST = (0, -1)
-ORIENTATIONS = [NORTH, EAST, SOUTH, WEST]
-
-FORWARD = 1
-BACKWARD = -1
-ROTATE = 0
-ACTIONS = [FORWARD, BACKWARD, ROTATE]
-
-WALL = 0
-FOOD = 127
-NONE = 1
+import constants as C
 
 
 class Pangea:
     def __init__(self, field_size=64):
         self.labyrinth = Labyrinth(field_size)
-        self.field = self.labyrinth.field
-        self.agent_pos = [7, 7]
-        self.agent_ori = NORTH
+        self.agent = Trilobit()
+        self.agent_pos = np.array([7, 7])
+        self.agent_percep = (5, 5)
+        self.agent_ori = C.NORTH
+        self.day_steps = 300
+
+    def run_day(self):
+        self.agent.init_model(self.perception())
+        for step in range(self.day_steps):
+            action = self.agent.act()
+            reward, perception = self.perform_action(action)
+            self.agent.react(reward, perception)
+        print(self.agent.energy)
+        self.agent.dream()
 
     def perception(self):
-        px = self.agent_pos[0]
-        py = self.agent_pos[1]
-        percep = self.field[px - 2:px + 3, py - 2:py + 3].copy()
-        return percep
-
-    def move_and_consume(self, action):
-        self.agent_pos[0] += action[0]
-        self.agent_pos[1] += action[1]
-        food = self.field[self.agent_pos[0], self.agent_pos[1]]
-        self.field[self.agent_pos[0], self.agent_pos[1]] = 0
-        return self.perception(), food
+        coor_position = np.array([self.agent_pos[0] - self.agent_percep[0] // 2,
+                                  self.agent_pos[1] - self.agent_percep[1] // 2])
+        return self.labyrinth.crop_at_position(coor_position, self.agent_percep)
 
     def rotate_agent(self):
-        idx = ORIENTATIONS.index(self.agent_ori)
-        self.agent_ori = ORIENTATIONS[(idx + 1) % 4]
+        idx = C.ORIENTATIONS.index(self.agent_ori)
+        self.agent_ori = C.ORIENTATIONS[(idx + 1) % 4]
 
-    def act(self, action):
-        if action == ROTATE:
-            self.rotate_agent()
-            return self.perception(), 0
-        y = self.agent_pos[0]
-        x = self.agent_pos[1]
-        y += self.agent_ori[0] * action
-        x += self.agent_ori[1] * action
-        if self.field[y, x] == WALL:
-            return self.perception(), 0
-        return self.move_and_consume(action)
-
-    def show_field(self):
-        field = self.field.copy()
-        field[self.agent_pos[0], self.agent_pos[1]] = -3
-        plt.imshow(field)
-
-    def get_field(self):
-        field = self.field.copy()
-        field[self.agent_pos[0], self.agent_pos[1]] = -3
-        return field
-
-    def reset_field(self):
-        fs = self.field_size
-        self.field = np.random.rand(fs + 4, fs + 4)
-        self.field[self.field < 0.8] = 0
-        self.field[0:2, :] = -1
-        self.field[fs + 2:, :] = -1
-        self.field[:, 0:2] = -1
-        self.field[:, fs + 2:] = -1
-        self.agent_pos = [15, 15]
-        return self.perception()
-
+    def perform_action(self, action):
+        agent_body = self.agent.body.copy()
+        agent_ori = self.agent_ori
+        if action == C.ROTATE:
+            np.rot90(agent_body, action)
+            idx = C.ORIENTATIONS.index(self.agent_ori)
+            agent_ori = C.ORIENTATIONS[(idx + 1) % 4]
+        agent_pos = self.agent_pos + np.array(self.agent_ori) * action
+        valid, reward = self.labyrinth.valid_position(agent_body, agent_pos)
+        if valid:
+            self.agent.body = agent_body
+            self.agent_pos = agent_pos
+            self.agent_ori = agent_ori
+            return reward, self.perception()
+        return -1, None
