@@ -34,6 +34,7 @@ CYAN = '\033[0;36m'
 COLORS = [RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN]
 
 OFF = '\033[0m'
+RET_LINE = '\x1b[1A\x1b[2K'
 
 
 ASCII_DICT = {WALL: '■', FOOD: '=', NONE: '.',

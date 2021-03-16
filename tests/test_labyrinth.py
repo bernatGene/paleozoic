@@ -31,6 +31,6 @@ for i in range(150):
         last_good = i
         print(agents_bodies["a"], a_pos["a"], a_ori["a"])
         v.append_step(l.field, a_pos, a_ene, a_ori)
-    v.print_last_step()
+    # v.print_last_step()
 
 v.save_day()

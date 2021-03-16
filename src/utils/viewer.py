@@ -8,16 +8,12 @@ import sys
 def field_to_string(field, colormap=None):
     if colormap is None:
         colormap = {}
-    text = "   "
-    for c in range(field.shape[1]):
-        text += str(c // 100)
-    text += '\n   '
-    for c in range(field.shape[1]):
-        text += str((c // 10) % 10)
-    text += '\n   '
-    for c in range(field.shape[1]):
-        text += str(c % 10)
-    text += '\n'
+    text = ""
+    for n in range(2, -1, -1):
+        text += "   "
+        for c in range(field.shape[1]):
+            text += str((c // (10 ** n)) % 10)
+        text += '\n'
     for r, row in enumerate(field):
         text += f"{r:03d}"
         for c, item in enumerate(row):
@@ -90,7 +86,7 @@ class Viewer:
             n_lines = str_step.count('\n')
             print(str_step)
             for _ in range(n_lines + 7):
-                sys.stdout.write("\x1b[1A\x1b[2K")
+                sys.stdout.write(C.RET_LINE)
             time.sleep(period)
 
     def save_day(self, day_name="unnamedDay.day"):
