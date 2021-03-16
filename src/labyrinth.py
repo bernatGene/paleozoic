@@ -51,10 +51,10 @@ class Labyrinth:
         vr, vc = C.body_coordinates_vector(agent_body, agent_ori)
         row = agent_pos[0] + vr
         col = agent_pos[1] + vc
-        body_mask = (body != C.EMPTY)
         if (row + body.shape[0] >= self.field.shape[0]) or (col + body.shape[1] >= self.field.shape[1]):
             return False, -1
         crop = self.crop_at_position((row, col), body.shape)
+        body_mask = (body != C.EMPTY)
         wall_mask = (crop == C.WALL)
         if np.any(wall_mask & body_mask):
             return False, -1
