@@ -1,5 +1,5 @@
 import numpy as np
-from src import constants as C
+import src.constants as C
 
 W = C.WALL
 O = C.NONE
@@ -80,8 +80,46 @@ TILE3 = np.array(
      [O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O]]
     , dtype=np.int8)
 
-TILES = [TILE0, TILE1, TILE2, TILE3]
-RATES = [0.25, 0.25, 0.4, 0.1]
+TILE4 = np.array(
+    [[O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O],
+     [O, O, W, W, W, W, W, W, W, W, W, W, W, W, O, O],
+     [O, O, W, W, W, W, W, W, W, W, W, W, W, W, O, O],
+     [O, O, W, W, O, O, O, O, O, O, O, O, W, W, O, O],
+     [O, O, W, W, O, O, O, O, O, O, O, O, W, W, O, O],
+     [O, O, W, W, O, O, O, O, O, O, O, O, W, W, O, O],
+     [O, O, W, W, O, O, O, O, O, O, O, O, W, W, O, O],
+     [O, O, W, W, O, O, O, O, O, O, O, O, W, W, O, O],
+     [O, O, W, W, O, O, O, O, O, O, O, O, W, W, O, O],
+     [O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O]]
+    , dtype=np.int8)
+
+TILE5 = np.array(
+    [[O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, O, O, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, O, O, O, O, O, W, W, O, O, O, O, O, O, O],
+     [O, O, W, W, W, W, W, W, W, W, W, W, W, W, O, O],
+     [O, O, W, W, W, W, W, W, W, W, W, W, W, W, O, O]]
+    , dtype=np.int8)
+
+TILES = [TILE0, TILE1, TILE2, TILE3, TILE4, TILE5]
+RATES = [0.15, 0.2, 0.25, 0.1, 0.1, 0.2]
 
 
 def get_random_tile(seed):
