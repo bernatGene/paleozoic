@@ -3,6 +3,7 @@ import pickle
 import src.constants as C
 import time
 import sys
+import gzip
 
 
 def field_to_string(field, colormap=None):
@@ -90,12 +91,12 @@ class Viewer:
             time.sleep(period)
 
     def save_day(self, day_name="unnamedDay.day"):
-        with open(day_name, 'wb') as f:
+        with gzip.open(day_name, 'wb') as f:
             saved_day = SavedDay(self.field, self.agents_bodies, self.day)
             pickle.dump(saved_day, file=f, protocol=4)
 
     def load_day(self, day_name="src/unnamedDay.day"):
-        with open(day_name, 'rb') as f:
+        with gzip.open(day_name, 'rb') as f:
             loaded_day = pickle.load(f)
             self.field = loaded_day.field
             self.agents_bodies = loaded_day.agents_bodies
