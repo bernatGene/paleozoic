@@ -25,7 +25,7 @@ for i in range(150):
     a_pos["a"] = ((a_pos["a"][0] + i % 2), (a_pos["a"][1] + (i + 1) % 2))
     a_ori["a"] = C.ORIENTATIONS[i % 4]
     print(f"iter {i}, {last_good}, {a_pos['a']}")
-    val, rew = l.valid_position(agents_bodies["a"], a_pos["a"], a_ori["a"])
+    val, rew = l.valid_agent_position(agents_bodies["a"], a_pos["a"], a_ori["a"])
     if val:
         print("checked passed")
         last_good = i

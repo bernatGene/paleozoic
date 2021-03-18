@@ -12,49 +12,59 @@ EPS = np.finfo(np.float32).eps.item()
 class Trilobit:
     def __init__(self, dna="#", lr=0.001, num_acts=3):
         self.dna = dna
+        self.dna_cost = C.COST_HEAD
         self.body = None
         self.num_actions = num_acts
         self.model = None
+        self.perception_shape = None
         self.perception = None
         self.optimizer = keras.optimizers.Adam(learning_rate=lr)
         self.huber_loss = keras.losses.Huber()
         self.action_probs_memories = []
         self.critic_value_memories = []
         self.rewards_memories = []
-        self.energy = 10
+        self.energy = C.INITIAL_ENERGY
         self.day_reward = 0
         self.overall_reward = 0
-        # self.gt = tf.GradientTape(persistent=True)
 
-    def get_inputs(self):
-        return [(5, 5)]
+    def get_perception_shape(self):
+        if self.perception_shape is None:
+            eyes_pos = np.argwhere(self.body == C.EYES)
+            head_pos = np.argwhere(self.body == C.HEAD)
+            inputs = [((0, 0), (5, 5))]
+            for r, c in eyes_pos:
+                print("Warning, multiple inputs not supported yet")
+            self.perception_shape = inputs
+            return inputs
+        return self.perception_shape
 
+    # TODO: Build models with dynamic inputs, maybe create Brain (Model) module
     def init_model(self, perception):
+        perception = perception[0]   # Only single input supported
         self.energy = 10
         self.day_reward = 0
         num_actions = self.num_actions  # FORWARD, BACKWARD, ROTATE
-        num_hidden = 128
-        inputs = layers.Input(shape=(self.get_inputs()[0]))
+        num_hidden = 64
+        inputs = layers.Input(shape=(self.get_perception_shape()[0][1]))
         x = layers.Flatten()(inputs)
         x = layers.Dense(num_hidden, activation="relu")(x)
         common = layers.Dense(num_hidden, activation="relu")(x)
         action = layers.Dense(num_actions, activation="softmax")(common)
         critic = layers.Dense(1)(common)
         self.model = keras.Model(inputs=inputs, outputs=[action, critic])
-        # self.gt.watch(self.model.trainable_variables)
         self.build_body()
         self.perception = perception
 
     def save_model(self):
-        self.model.save('model')
+        self.model.save(f'model{self.dna}')
 
     def load_model(self):
-        self.model = tf.keras.models.load_model("model")
+        self.model = tf.keras.models.load_model(f"model{self.dna}")
 
     def reset_state(self, perception):
-        self.energy = 10
+        self.energy = C.INITIAL_ENERGY
         self.day_reward = 0
-        self.perception = perception
+        self.perception = perception[0]
 
     def act(self):
         action_probs, critic_value = self.model(np.expand_dims(self.perception, 0))
@@ -63,22 +73,22 @@ class Trilobit:
         self.critic_value_memories.append(critic_value[0, 0])
         action_const = C.ACTIONS[action]
         if action_const == C.ROTATE:
-            self.energy -= 0.05 * len(self.dna)
+            self.energy -= 0.5 * self.dna_cost
         elif action_const == C.BACKWARD:
-            self.energy -= 0.1 * len(self.dna)
+            self.energy -= 0.75 * self.dna_cost
         return action_const
 
     def react(self, food, perception):
-        self.energy += food
-        self.energy -= 0.05 * len(self.dna)
+        self.energy += food * C.FOOD_VALUE
+        self.energy -= self.dna_cost
         if food > 0:
             reward = self.energy
         else:
             reward = 1
         if perception is not None:
-            self.perception = perception
+            self.perception = perception[0]
         else:
-            reward = -1
+            reward = -10
         self.rewards_memories.append(reward)
         self.day_reward += reward
         if self.energy < 0:
@@ -86,10 +96,10 @@ class Trilobit:
         return True
 
     def dream(self, tape):
-
         self.overall_reward = 0.05 * self.day_reward + (1 - 0.05) * self.overall_reward
         returns = []
         discounted_sum = 0
+        # TODO: Rethink rewards so that they reflect better desired behaviour
         for r in self.rewards_memories[::-1]:
             discounted_sum = r + GAMMA * discounted_sum
             returns.insert(0, discounted_sum)
@@ -108,23 +118,19 @@ class Trilobit:
             )
         # Backpropagation
         loss_value = sum(actor_losses) + sum(critic_losses)
-        # print(self.model.trainable_variables)
-        # print(loss_value)
         grads = tape.gradient(loss_value, self.model.trainable_variables)
-        # print(self.gt.watched_variables())
-        # print(grads)
         self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
         # Clear the loss and reward history
         self.action_probs_memories.clear()
         self.critic_value_memories.clear()
         self.rewards_memories.clear()
 
+    # TODO: DNA cost does not reflect the type of cells!
     def grow_gene(self, idx_dna, cell_dict, gene_pos):
         idx_dna += 1
         if idx_dna >= len(self.dna):
             return idx_dna
         gene = self.dna[idx_dna]
-        # print(gene)
         if gene == '-' or (gene_pos in cell_dict):
             return idx_dna
         cell_dict[gene_pos] = gene
@@ -140,7 +146,6 @@ class Trilobit:
         gene_pos = (0, 0)
         cell_dict = {}
         self.grow_gene(-1, cell_dict, gene_pos)
-        # print(cell_dict)
         self.array_body(cell_dict)
 
     def array_body(self, cell_dict):
@@ -154,5 +159,4 @@ class Trilobit:
         for k, v in cell_dict.items():
             r = k[0] - min_r
             c = k[1] - min_c
-            # print(k, (r, c))
             self.body[r, c] = C.CELL_DICT[v]

@@ -35,7 +35,7 @@ class Labyrinth:
                 self.field[r:r + 16, c:c + 16] = tiles.get_random_tile(self.rng.integers(0, 9999))
         self.field[2:18, 2:18] = tiles.TILE0
 
-    def grow_food(self, food_limit=120):
+    def grow_food(self, food_limit=500):
         rows = self.rng.integers(2, self.field_size[0] + 3, food_limit - self.food_count)
         cols = self.rng.integers(2, self.field_size[1] + 3, food_limit - self.food_count)
         for r, c in zip(rows, cols):
@@ -43,10 +43,20 @@ class Labyrinth:
                 self.food_count += 1
                 self.field[r][c] = C.FOOD
 
+    def reset_food(self, food_limit=500):
+        self.field[self.field == C.FOOD] = C.NONE
+        self.food_count = 0
+        self.grow_food(food_limit=food_limit)
+
+    def perception_around_pos(self, pos, shape):
+        r = pos[0] - (shape[0] // 2)
+        c = pos[1] - (shape[1] // 2)
+        return self.crop_at_position((r, c), shape)
+
     def crop_at_position(self, pos, shape):
         return self.field[pos[0]:pos[0]+shape[0], pos[1]:pos[1]+shape[1]].copy()
 
-    def valid_position(self, agent_body, agent_pos, agent_ori):
+    def valid_agent_position(self, agent_body, agent_pos, agent_ori):
         body = np.rot90(agent_body, -C.ORIENTATIONS.index(agent_ori))
         vr, vc = C.body_coordinates_vector(agent_body, agent_ori)
         row = agent_pos[0] + vr
@@ -60,8 +70,9 @@ class Labyrinth:
             return False, -1
         food_mask = (crop == C.FOOD)
         feed_mask = (body == C.FEED) | (body == C.HEAD)
-        consumed = np.count_nonzero(food_mask & feed_mask)
+        consumed_mask = food_mask & feed_mask
+        consumed = np.count_nonzero(consumed_mask)
         self.food_count -= consumed
         replace = self.field[row:row+body.shape[0], col:col+body.shape[1]]
-        replace[consumed] = C.NONE
+        replace[consumed_mask] = C.NONE
         return True, consumed

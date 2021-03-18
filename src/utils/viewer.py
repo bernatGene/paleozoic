@@ -10,13 +10,14 @@ def field_to_string(field, colormap=None):
     if colormap is None:
         colormap = {}
     text = ""
+    # Prints column numbers
     for n in range(2, -1, -1):
         text += "   "
         for c in range(field.shape[1]):
             text += str((c // (10 ** n)) % 10)
         text += '\n'
     for r, row in enumerate(field):
-        text += f"{r:03d}"
+        text += f"{r:03d}"   # Prints row numbers
         for c, item in enumerate(row):
             if (r, c) in colormap:
                 text += C.COLORS[colormap[(r, c)]] + C.ASCII_DICT[item] + C.OFF
@@ -48,9 +49,11 @@ class Viewer:
         for r, c in self.day[step]["food_pos"]:
             field[r, c] = C.FOOD
         colormap = {}
+        energies = ""
         for i, (agent_id, p) in enumerate(self.day[step]["agents_pos"].items()):
             body = self.agents_bodies[agent_id].copy()
             ori = self.day[step]["agents_orients"][agent_id]
+            ene = self.day[step]["agents_energy"][agent_id]
             vr, vc = C.body_coordinates_vector(body, ori)
             r = p[0] + vr
             c = p[1] + vc
@@ -58,12 +61,16 @@ class Viewer:
             body_mask = (body != C.EMPTY)
             body_list = np.argwhere(body_mask)
             for (p0, p1) in body_list:
-                colormap[(p0 + r, p1 + c)] = i % len(C.COLORS)
+                if ene < 0:
+                    colormap[(p0 + r, p1 + c)] = -1
+                else:
+                    colormap[(p0 + r, p1 + c)] = i % (len(C.COLORS) - 1)
             crop = field[r:r + body.shape[0], c:c + body.shape[1]]
             crop[body_mask] = C.EMPTY
             crop += body
+            energies += f'Agent {i}: {ene:3.3f} -'
         heading = f'Day step: {step:04d} \n'
-        return heading + field_to_string(field, colormap)
+        return heading + energies + '\n' + field_to_string(field, colormap)
 
     def append_step(self, field, agents_pos=None, agents_energy=None, agents_orients=None):
         if agents_orients is None:
@@ -72,11 +79,11 @@ class Viewer:
             agents_energy = {}
         if agents_pos is None:
             agents_pos = {}
-        food_pos = np.argwhere(field == C.FOOD)
-        self.day.append({"agents_pos": agents_pos.copy(),  # Positions must be tuples
-                         "agents_orients": agents_orients.copy(),
-                         "agents_energy": agents_energy.copy(),
-                         "food_pos": food_pos.copy()})
+        food_pos = np.argwhere(field == C.FOOD)  # Do we really need to pass the whole field just for this?
+        self.day.append({"agents_pos": agents_pos,  # Positions must be tuples
+                         "agents_orients": agents_orients,
+                         "agents_energy": agents_energy,
+                         "food_pos": food_pos})
 
     def print_last_step(self):
         print(self.field_at_step(-1))
