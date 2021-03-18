@@ -9,7 +9,7 @@ field = np.concatenate((field, field, field, field), axis=1)
 v = viewer.Viewer(field, None)
 
 print("Test 1: Test creature")
-t2 = tri.Trilobit(dna="#+0----+---o")
+t2 = tri.Trilobit(dna="#+----0")
 print(t2.dna)
 t2.build_body()
 body = t2.body
@@ -32,7 +32,6 @@ for i in range(50):
                    "c": C.ORIENTATIONS[(i + 2) % 4],
                    "d": C.ORIENTATIONS[(i + 3) % 4]})
 
-v.save_day()
 
 
 # t2 = tri.Trilobit(dna="#o++++++++0o++0++o-++--+-+-++-++-+-+---0-o++++--o0+o0+00+--+-+-+-+---0")

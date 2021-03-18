@@ -59,7 +59,10 @@ class Trilobit:
         self.model.save(f'model{self.dna}')
 
     def load_model(self):
-        self.model = tf.keras.models.load_model(f"model{self.dna}")
+        try:
+            self.model = tf.keras.models.load_model(f"model{self.dna}", compile=False)
+        except IOError as _:
+            print(f"No saved model for {self.dna}")
 
     def reset_state(self, perception):
         self.energy = C.INITIAL_ENERGY

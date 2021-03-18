@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from contextlib import ExitStack
 
 from src.labyrinth import Labyrinth
 from src.trilobit import Trilobit
@@ -10,9 +11,9 @@ import src.constants as C
 class Pangea:
     def __init__(self, field_size=(64, 160)):
         self.labyrinth = Labyrinth(field_size)
-        self.agents = [Trilobit(dna="#-0+--"), Trilobit(dna="#+----0")]
-        self.agents_pos = [[None, None], [None, None]]
-        self.agents_ori = [C.NORTH, C.NORTH]
+        self.agents = [Trilobit(dna="#-0+--"), Trilobit(dna="#+----0"), Trilobit(dna="#+"), Trilobit(dna="#")]
+        self.agents_pos = [[None, None] for _ in self.agents]
+        self.agents_ori = [C.NORTH for _ in self.agents]
         self.init_agents()
         self.day_steps = 500
         bodies = {}
@@ -20,6 +21,7 @@ class Pangea:
             bodies[i] = a.body
         self.viewer = viewer.Viewer(self.labyrinth.field, bodies)
 
+    # TODO: Define _max_agents_ safe spawning regions, assign them randomly to active agents
     def init_agents(self, reset=False):
         pos = np.array([14, 81])
         for i, a in enumerate(self.agents):
@@ -31,20 +33,18 @@ class Pangea:
                 a.init_model(perception)
             else:
                 a.reset_state(perception)
-            pos = pos + np.array([32, 0])
+            pos = pos + np.array([10, 0])
 
-    # TODO: Currently 2 and only 2 agents supported. Gradient tapes are the limiting problem
-    def run_day(self, report_steps=False, max_steps=0, food_limit=1000):
+    def run_day(self, report_steps=False, report_progress=False, max_steps=0, food_limit=1000):
         if not max_steps:
             max_steps = self.day_steps
         self.labyrinth.reset_food(food_limit=food_limit)
         self.init_agents(reset=True)
         dead_at = [0 for _ in self.agents]
-        # TODO: Can I get the tape inits in a loop and use them anyway outside the context? no.
-        with tf.GradientTape(watch_accessed_variables=False) as tape1, \
-                tf.GradientTape(watch_accessed_variables=False) as tape2:
-            tape1.watch(self.agents[0].model.trainable_variables)
-            tape2.watch(self.agents[1].model.trainable_variables)
+        with ExitStack() as stack:
+            tapes = [stack.enter_context(tf.GradientTape(watch_accessed_variables=False)) for _ in self.agents]
+            for i, a in enumerate(self.agents):
+                tapes[i].watch(a.model.trainable_variables)
             for step in range(max_steps):
                 if all(dead_at):
                     break
@@ -53,21 +53,17 @@ class Pangea:
                         continue
                     action = self.agents[i].act()
                     reward, perception = self.perform_action(action, i)
-                    # print(f'Agent {i} performed {action}, received: {reward}')
-                    # print(f'Agent {i} is on {self.agents_pos[i]}, oriented: {self.agents_ori[i]}')
                     if not self.agents[i].react(reward, perception):
                         dead_at[i] = step + 1
                 if report_steps:
                     self.report_step()
-            if all(dead_at):
-                print(f"Agent 0 survived {dead_at[0]} steps, 1 survived {dead_at[1]}")
-            elif any(dead_at):
-                print(f"Agent {dead_at.index(0)} survived all day long!"
-                      f"Agent {int (not dead_at.index(0))} survived {dead_at[1]}")
-            else:
-                print(f"Both Agents survived the whole day!!")
-            self.agents[0].dream(tape1)
-            self.agents[1].dream(tape2)
+            for i, a in enumerate(self.agents):
+                a.dream(tapes[i])
+        if report_progress:
+            for i, a in enumerate(self.agents):
+                steps = f"{dead_at[i]:3d}" if dead_at[i] else "All"
+                print(f"A{i} survived {steps} steps (RR:{a.overall_reward:6.1f})", end=" - ")
+            print("")
 
     def report_step(self):
         positions = {i: (p[0], p[1]) for i, p in enumerate(self.agents_pos)}

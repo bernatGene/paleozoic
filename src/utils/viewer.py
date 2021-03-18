@@ -68,7 +68,7 @@ class Viewer:
             crop = field[r:r + body.shape[0], c:c + body.shape[1]]
             crop[body_mask] = C.EMPTY
             crop += body
-            energies += f'Agent {i}: {ene:3.3f} -'
+            energies += f'Agent {i}: {ene:5.3f} | '
         heading = f'Day step: {step:04d} \n'
         return heading + energies + '\n' + field_to_string(field, colormap)
 
