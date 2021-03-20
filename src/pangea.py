@@ -1,6 +1,4 @@
 import numpy as np
-import tensorflow as tf
-from contextlib import ExitStack
 
 from src.labyrinth import Labyrinth
 from src.trilobit import Trilobit
@@ -19,6 +17,7 @@ class Pangea:
         bodies = {}
         for i, a in enumerate(self.agents):
             bodies[i] = a.body
+        # TODO: viewer field needs to be reset if lab is reset. In fact, it should not be an attribute probably
         self.viewer = viewer.Viewer(self.labyrinth.field, bodies)
 
     # TODO: Define _max_agents_ safe spawning regions, assign them randomly to active agents
@@ -38,33 +37,23 @@ class Pangea:
     def run_day(self, report_steps=False, report_progress=False, max_steps=0, food_limit=1000):
         if not max_steps:
             max_steps = self.day_steps
-        # self.labyrinth.reset_food(food_limit=food_limit)
         self.labyrinth = Labyrinth(field_size=(64, 160))
         self.init_agents(reset=True)
-        # self.agents = [Trilobit(dna="#-0+--"), Trilobit(dna="#+----0"), Trilobit(dna="#+"), Trilobit(dna="#")]
-        # self.agents_pos = [[None, None] for _ in self.agents]
-        # self.agents_ori = [C.NORTH for _ in self.agents]
-        # self.init_agents()
-
         dead_at = [0 for _ in self.agents]
-        with ExitStack() as stack:
-            tapes = [stack.enter_context(tf.GradientTape(watch_accessed_variables=False)) for _ in self.agents]
-            for i, a in enumerate(self.agents):
-                tapes[i].watch(a.model.trainable_variables)
-            for step in range(max_steps):
-                if all(dead_at):
-                    break
-                for i, agent in enumerate(self.agents):
-                    if dead_at[i]:
-                        continue
-                    action = self.agents[i].act()
-                    reward, perception = self.perform_action(action, i)
-                    if not self.agents[i].react(reward, perception):
-                        dead_at[i] = step + 1
-                if report_steps:
-                    self.report_step()
-            for i, a in enumerate(self.agents):
-                a.dream(tapes[i])
+        for step in range(max_steps):
+            if all(dead_at):
+                break
+            for i, agent in enumerate(self.agents):
+                if dead_at[i]:
+                    continue
+                action = self.agents[i].act()
+                reward, perception = self.perform_action(action, i)
+                if not self.agents[i].react(reward, perception):
+                    dead_at[i] = step + 1
+            if report_steps:
+                self.report_step()
+        for i, a in enumerate(self.agents):
+            a.dream()
         if report_progress:
             for i, a in enumerate(self.agents):
                 steps = f"{dead_at[i]:3d}" if dead_at[i] else "All"

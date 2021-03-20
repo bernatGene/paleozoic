@@ -1,28 +1,17 @@
 import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
 
 import src.constants as C
-
-GAMMA = 0.99
-EPS = np.finfo(np.float32).eps.item()
+from src.brain import Brain
 
 
 class Trilobit:
-    def __init__(self, dna="#", lr=0.001, num_acts=3):
+    def __init__(self, dna="#", num_acts=3):
         self.dna = dna
         self.dna_cost = C.COST_HEAD
         self.body = None
         self.num_actions = num_acts
-        self.model = None
+        self.craneum = Brain()
         self.perception_shape = None
-        self.perception = None
-        self.optimizer = keras.optimizers.Adam(learning_rate=lr)
-        self.huber_loss = keras.losses.Huber()
-        self.action_probs_memories = []
-        self.critic_value_memories = []
-        self.rewards_memories = []
         self.energy = C.INITIAL_ENERGY
         self.day_reward = 0
         self.overall_reward = 0
@@ -38,45 +27,28 @@ class Trilobit:
             return inputs
         return self.perception_shape
 
-    # TODO: Build models with dynamic inputs, maybe create Brain (Model) module
+    # TODO: Rethink if this is necessary
     def init_model(self, perception):
-        perception = perception[0]   # Only single input supported
-        self.energy = 10
-        self.day_reward = 0
-        num_actions = self.num_actions  # FORWARD, BACKWARD, ROTATE
-        num_hidden = 64
-        inputs = layers.Input(shape=(self.get_perception_shape()[0][1]))
-        x = layers.Flatten()(inputs)
-        x = layers.Dense(num_hidden, activation="relu")(x)
-        common = layers.Dense(num_hidden, activation="relu")(x)
-        action = layers.Dense(num_actions, activation="softmax")(common)
-        critic = layers.Dense(1)(common)
-        self.model = keras.Model(inputs=inputs, outputs=[action, critic])
-        self.build_body()
-        self.perception = perception
+        self.craneum.init_perception(perception[0])
 
-    def save_model(self):
-        self.model.save(f'model{self.dna}')
-
-    def load_model(self):
-        try:
-            self.model = tf.keras.models.load_model(f"tests/model{self.dna}", compile=False)
-        except IOError as _:
-            print(f"No saved model for {self.dna}")
+    # TODO: Transfer functionality to brain module
+    # def save_model(self):
+    #     self.model.save(f'model{self.dna}')
+    #
+    # def load_model(self):
+    #     try:
+    #         self.model = tf.keras.models.load_model(f"tests/model{self.dna}", compile=False)
+    #     except IOError as _:
+    #         print(f"No saved model for {self.dna}")
 
     def reset_state(self, perception):
-        self.optimizer = keras.optimizers.Adam(learning_rate=0.001)
         self.energy = C.INITIAL_ENERGY
         self.day_reward = 0
-        self.perception = perception[0]
+        self.craneum.init_perception(perception[0])
 
     def act(self):
-        input_tensor = tf.convert_to_tensor(np.expand_dims(self.perception, 0))
-        action_probs, critic_value = self.model(input_tensor)
-        action = np.random.choice(self.num_actions, p=np.squeeze(action_probs))
-        self.action_probs_memories.append(tf.math.log(action_probs[0, action]))
-        self.critic_value_memories.append(critic_value[0, 0])
-        action_const = C.ACTIONS[action]
+        a_index = self.craneum.decision()
+        action_const = C.ACTIONS[a_index]
         if action_const == C.ROTATE:
             self.energy -= 0.5 * self.dna_cost
         elif action_const == C.BACKWARD:
@@ -88,49 +60,20 @@ class Trilobit:
         self.energy -= self.dna_cost
         if food > 0:
             reward = self.energy
+        elif perception is None:
+            reward = -10
         else:
             reward = 1
-        if perception is not None:
-            self.perception = perception[0]
-        else:
-            reward = -10
-        self.rewards_memories.append(reward)
+        self.craneum.remember_reward(reward, perception)
         self.day_reward += reward
         if self.energy < 0:
             return False
         return True
 
-    def dream(self, tape):
+    def dream(self):
         self.overall_reward = 0.05 * self.day_reward + (1 - 0.05) * self.overall_reward
-        returns = []
-        discounted_sum = 0
-        # TODO: Rethink rewards so that they reflect better desired behaviour
-        for r in self.rewards_memories[::-1]:
-            discounted_sum = r + GAMMA * discounted_sum
-            returns.insert(0, discounted_sum)
+        self.craneum.dream()
 
-        returns = np.array(returns)
-        returns = (returns - np.mean(returns)) / (np.std(returns) + EPS)
-        returns = returns.tolist()
-        history = zip(self.action_probs_memories, self.critic_value_memories, returns)
-        actor_losses = []
-        critic_losses = []
-        for log_prob, value, ret in history:
-            diff = ret - value
-            actor_losses.append(-log_prob * diff)
-            critic_losses.append(
-                self.huber_loss(tf.expand_dims(value, 0), tf.expand_dims(ret, 0))
-            )
-        # Backpropagation
-        loss_value = sum(actor_losses) + sum(critic_losses)
-        grads = tape.gradient(loss_value, self.model.trainable_variables)
-        self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
-        # Clear the loss and reward history
-        self.action_probs_memories.clear()
-        self.critic_value_memories.clear()
-        self.rewards_memories.clear()
-
-    # TODO: DNA cost does not reflect the type of cells!
     def grow_gene(self, idx_dna, cell_dict, gene_pos):
         idx_dna += 1
         if idx_dna >= len(self.dna):
@@ -165,3 +108,7 @@ class Trilobit:
             r = k[0] - min_r
             c = k[1] - min_c
             self.body[r, c] = C.CELL_DICT[v]
+        for i, cell_type in enumerate(C.CELLS):
+            n_cells = np.count_nonzero(self.body == cell_type)
+            self.dna_cost += n_cells * C.CELLS_COST[i]
+
