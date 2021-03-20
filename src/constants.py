@@ -45,7 +45,7 @@ COLORS = [RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, DEAD]
 OFF = '\033[0m'
 RET_LINE = '\x1b[1A\x1b[2K'
 
-ASCII_DICT = {WALL: '■', FOOD: '=', NONE: '.',
+ASCII_DICT = {WALL: '■', FOOD: '@', NONE: '.',
               HEAD: '#', BODY: '+', EYES: 'o', FEED: '0', EMPTY: ' '}
 
 

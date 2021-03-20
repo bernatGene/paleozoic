@@ -38,8 +38,14 @@ class Pangea:
     def run_day(self, report_steps=False, report_progress=False, max_steps=0, food_limit=1000):
         if not max_steps:
             max_steps = self.day_steps
-        self.labyrinth.reset_food(food_limit=food_limit)
+        # self.labyrinth.reset_food(food_limit=food_limit)
+        self.labyrinth = Labyrinth(field_size=(64, 160))
         self.init_agents(reset=True)
+        # self.agents = [Trilobit(dna="#-0+--"), Trilobit(dna="#+----0"), Trilobit(dna="#+"), Trilobit(dna="#")]
+        # self.agents_pos = [[None, None] for _ in self.agents]
+        # self.agents_ori = [C.NORTH for _ in self.agents]
+        # self.init_agents()
+
         dead_at = [0 for _ in self.agents]
         with ExitStack() as stack:
             tapes = [stack.enter_context(tf.GradientTape(watch_accessed_variables=False)) for _ in self.agents]
@@ -67,10 +73,8 @@ class Pangea:
 
     def report_step(self):
         positions = {i: (p[0], p[1]) for i, p in enumerate(self.agents_pos)}
-        energies = {}
-        for i, a in enumerate(self.agents):
-            energies[i] = a.energy
-        orientations = {i: ori for i, ori in enumerate(self.agents_ori)}
+        energies = {i: a.energy for i, a in enumerate(self.agents)}
+        orientations = {i: o for i, o in enumerate(self.agents_ori)}
         self.viewer.append_step(self.labyrinth.field, positions, energies, orientations)
 
     def perception(self, agent_idx):

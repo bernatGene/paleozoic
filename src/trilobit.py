@@ -60,17 +60,19 @@ class Trilobit:
 
     def load_model(self):
         try:
-            self.model = tf.keras.models.load_model(f"model{self.dna}", compile=False)
+            self.model = tf.keras.models.load_model(f"tests/model{self.dna}", compile=False)
         except IOError as _:
             print(f"No saved model for {self.dna}")
 
     def reset_state(self, perception):
+        self.optimizer = keras.optimizers.Adam(learning_rate=0.001)
         self.energy = C.INITIAL_ENERGY
         self.day_reward = 0
         self.perception = perception[0]
 
     def act(self):
-        action_probs, critic_value = self.model(np.expand_dims(self.perception, 0))
+        input_tensor = tf.convert_to_tensor(np.expand_dims(self.perception, 0))
+        action_probs, critic_value = self.model(input_tensor)
         action = np.random.choice(self.num_actions, p=np.squeeze(action_probs))
         self.action_probs_memories.append(tf.math.log(action_probs[0, action]))
         self.critic_value_memories.append(critic_value[0, 0])
