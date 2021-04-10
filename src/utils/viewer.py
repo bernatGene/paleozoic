@@ -97,7 +97,8 @@ class Viewer:
                 sys.stdout.write(C.RET_LINE)
             time.sleep(period)
 
-    def save_day(self, day_name="unnamedDay.day"):
+    def save_day(self, day_name="unnamedDay"):
+        day_name += '.day'
         with gzip.open(day_name, 'wb') as f:
             saved_day = SavedDay(self.field, self.agents_bodies, self.day)
             pickle.dump(saved_day, file=f, protocol=4)
