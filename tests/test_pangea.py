@@ -1,6 +1,8 @@
 from src.pangea import Pangea
 
-pan = Pangea()
+png = Pangea((64, 32), food_limit=0)
+png.report_step()
+png.agent_intersections(0)
 
-pan.run_day(report_steps=True)
-pan.viewer.save_day(day_name="test_pangea1")
+
+png.run_day(max_steps=20, report_steps=True, report_progress=True)

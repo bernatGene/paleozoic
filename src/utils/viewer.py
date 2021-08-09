@@ -20,7 +20,7 @@ def field_to_string(field, colormap=None):
         text += f"{r:03d}"   # Prints row numbers
         for c, item in enumerate(row):
             if (r, c) in colormap:
-                text += C.COLORS[colormap[(r, c)]] + C.ASCII_DICT[item] + C.OFF
+                text += colormap[(r, c)] + C.ASCII_DICT[item] + C.OFF
             else:
                 text += C.ASCII_DICT[item]
         text += '\n'
@@ -45,6 +45,7 @@ class Viewer:
         self.day = []
 
     def field_at_step(self, step):
+        # TODO: add color for intersections.
         field = self.field.copy()
         for r, c in self.day[step]["food_pos"]:
             field[r, c] = C.FOOD
@@ -60,12 +61,14 @@ class Viewer:
             body = np.rot90(body, -C.ORIENTATIONS.index(ori))
             body_mask = (body != C.EMPTY)
             body_list = np.argwhere(body_mask)
-            for (p0, p1) in body_list:
-                if ene < 0:
-                    colormap[(p0 + r, p1 + c)] = -1
-                else:
-                    colormap[(p0 + r, p1 + c)] = i % (len(C.COLORS) - 1)
             crop = field[r:r + body.shape[0], c:c + body.shape[1]]
+            for (p0, p1) in body_list:
+                if crop[p0, p1] in C.CELLS:
+                    colormap[(p0 + r, p1 + c)] = C.OVERLAP
+                if ene < 0:
+                    colormap[(p0 + r, p1 + c)] = C.DEAD
+                else:
+                    colormap[(p0 + r, p1 + c)] = C.COLORS[i % (len(C.COLORS))]
             crop[body_mask] = C.EMPTY
             crop += body
             energies += f'Agent {i}: {ene:5.3f} | '

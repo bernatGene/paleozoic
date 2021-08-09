@@ -6,13 +6,13 @@ import src.constants as C
 
 
 class Labyrinth:
-    def __init__(self, field_size=(64, 160)):
+    def __init__(self, field_size=(64, 160), food_limit=500):
         self.rng = np.random.default_rng(int(time.time()))
         self.field = np.ones((field_size[0] + 4, field_size[1] + 4), dtype=np.int8)
         self.field_size = field_size
         self.build_walls()
         self.food_count = 0
-        self.grow_food()
+        self.grow_food(food_limit=food_limit)
 
     def reset_seed(self, seed=0):
         if not seed:
@@ -29,7 +29,7 @@ class Labyrinth:
         cols = range(0, self.field_size[1], 16)
         coordinates = [(x0 + 2, y0 + 2) for x0 in rows for y0 in cols]
         for r, c in coordinates:
-            if 4 <= c / 16 <= 5:
+            if 0 <= c / 16 <= 1:  # TODO: remove hardcoded values
                 self.field[r:r + 16, c:c + 16] = tiles.TILE0
             else:
                 self.field[r:r + 16, c:c + 16] = tiles.get_random_tile(self.rng.integers(0, 9999))
@@ -54,7 +54,7 @@ class Labyrinth:
         return self.crop_at_position((r, c), shape)
 
     def crop_at_position(self, pos, shape):
-        return self.field[pos[0]:pos[0]+shape[0], pos[1]:pos[1]+shape[1]].copy()
+        return self.field[pos[0]:pos[0] + shape[0], pos[1]:pos[1] + shape[1]].copy()
 
     def valid_agent_position(self, agent_body, agent_pos, agent_ori):
         body = np.rot90(agent_body, -C.ORIENTATIONS.index(agent_ori))
@@ -73,6 +73,6 @@ class Labyrinth:
         consumed_mask = food_mask & feed_mask
         consumed = np.count_nonzero(consumed_mask)
         self.food_count -= consumed
-        replace = self.field[row:row+body.shape[0], col:col+body.shape[1]]
+        replace = self.field[row:row + body.shape[0], col:col + body.shape[1]]
         replace[consumed_mask] = C.NONE
         return True, consumed

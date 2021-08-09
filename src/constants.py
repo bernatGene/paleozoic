@@ -7,16 +7,19 @@ HEAD = -2
 BODY = -3
 EYES = -4
 FEED = -5
-EMPTY = 0
+EMPTY = 0  # TODO: Difference between Empty and None? How much do we depend on them being exactly 1 and 0?
 
 CELLS = [HEAD, BODY, EYES, FEED]
 
 FOOD_VALUE = 10
-INITIAL_ENERGY = 50
-COST_HEAD = 1
-COST_FEED = 2
-COST_BODY = 0.1
-COST_EYES = 2
+MEAT_FACTOR = 3
+INVALID_PUNISH = -10
+INITIAL_ENERGY = 100
+COST_HEAD = 100
+COST_FEED = 20
+COST_BODY = 1
+COST_EYES = 20
+COST_FACTOR = 0.01
 
 CELLS_COST = [COST_HEAD, COST_FEED, COST_BODY, COST_EYES]
 
@@ -33,22 +36,40 @@ ACTIONS = [FORWARD, BACKWARD, ROTATE]
 
 CELL_DICT = {'#': HEAD, '+': BODY, 'o': EYES, '0': FEED, '-': EMPTY}
 
-
 RED = '\033[1;91m'  # Red
 GREEN = '\033[1;92m'  # Green
 YELLOW = '\033[1;93m'  # Yellow
 BLUE = '\033[1;94m'  # Blue
 MAGENTA = '\033[1;95m'  # Purple
 CYAN = '\033[1;96m'  # Cyan
-DEAD = '\033[0;101m'
+OVERLAP = '\033[0;103m'  # Yellow background
+DEAD = '\033[0;101m'  # Red background
 
-COLORS = [RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, DEAD]
+
+COLORS = [RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN]
+BACKGROUND_COLORS = [OVERLAP, DEAD]
 
 OFF = '\033[0m'
 RET_LINE = '\x1b[1A\x1b[2K'
 
 ASCII_DICT = {WALL: '■', FOOD: '@', NONE: '.',
               HEAD: '#', BODY: '+', EYES: 'o', FEED: '0', EMPTY: ' '}
+
+
+def interaction_outcome(c_a, c_b):
+    """
+    Given two cell types which are intersecting, returns the effect to be given to each agent.
+    :param c_a: Cell type of agent A, must be strictly in [CELLS] list
+    :param c_b: Cell type of agent B, must be strictly in [CELLS] list
+    :return: Reward or punishment to each agent respectively
+    """
+    if c_a in [FEED, HEAD] and c_b in [FEED, HEAD]:
+        return -1, -1
+    if c_a in [FEED, HEAD]:
+        return FOOD_VALUE * MEAT_FACTOR, - FOOD_VALUE * MEAT_FACTOR
+    if c_b in [FEED, HEAD]:
+        return - FOOD_VALUE * MEAT_FACTOR, FOOD_VALUE * MEAT_FACTOR
+    return 0, 0
 
 
 def is_cell(c):

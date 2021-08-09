@@ -1,6 +1,10 @@
 FROM pytorch/pytorch:latest
 
 RUN pip install jupyterlab
+RUN pip install pandas
+RUN pip install scipy
+RUN pip install sklearn
+RUN pip install matplotlib 
 
 EXPOSE 8888 4040
 

@@ -7,7 +7,7 @@ from src.brain import Brain
 class Trilobit:
     def __init__(self, dna="#", num_acts=3):
         self.dna = dna
-        self.dna_cost = C.COST_HEAD
+        self.dna_cost = C.COST_HEAD * C.COST_FACTOR
         self.body = None
         self.num_actions = num_acts
         self.craneum = Brain()
@@ -31,16 +31,6 @@ class Trilobit:
     def init_model(self, perception):
         self.craneum.init_perception(perception[0])
 
-    # TODO: Transfer functionality to brain module
-    # def save_model(self):
-    #     self.model.save(f'model{self.dna}')
-    #
-    # def load_model(self):
-    #     try:
-    #         self.model = tf.keras.models.load_model(f"tests/model{self.dna}", compile=False)
-    #     except IOError as _:
-    #         print(f"No saved model for {self.dna}")
-
     def reset_state(self, perception):
         self.energy = C.INITIAL_ENERGY
         self.day_reward = 0
@@ -55,23 +45,34 @@ class Trilobit:
             self.energy -= 0.75 * self.dna_cost
         return action_const
 
-    def react(self, food, perception):
-        self.energy += food * C.FOOD_VALUE
+    def react(self, reward, perception):
+        """
+        Agent reacts to the action it just took. Its energy is updated and the reward imprinted in its memory.
+        :param reward: The reward for the action taken, can be positive or negative.
+        :param perception: The perception around the position of the agent.
+        :return: False if the agent is dead as a result. True otherwise.
+        """
+        self.energy += reward
         self.energy -= self.dna_cost
-        if food > 0:
-            reward = self.energy
-        elif perception is None:
-            reward = -10
-        else:
-            reward = 1
         self.craneum.remember_reward(reward, perception)
         self.day_reward += reward
         if self.energy < 0:
             return False
         return True
 
+    def passive_react(self, reward):
+        """
+        When a passive agent is intersected by a moving agent, the resulting reward (or punishment) is imprinted into
+        its memory.
+        :param reward:
+        :return:
+        """
+        # print(f"{self.dna} got intersected!")
+        self.energy += reward
+        self.craneum.remember_reward(reward, None)
+
     def dream(self):
-        self.overall_reward = 0.05 * self.day_reward + (1 - 0.05) * self.overall_reward
+        self.overall_reward = 0.05 * self.day_reward + (1 - 0.05) * self.overall_reward  # todo: why negative?
         self.craneum.dream()
 
     def grow_gene(self, idx_dna, cell_dict, gene_pos):
@@ -79,10 +80,10 @@ class Trilobit:
         if idx_dna >= len(self.dna):
             return idx_dna
         gene = self.dna[idx_dna]
-        if gene == '-' or (gene_pos in cell_dict):
+        if C.CELL_DICT[gene] == C.EMPTY or (gene_pos in cell_dict):
             return idx_dna
         cell_dict[gene_pos] = gene
-        if gene == 'o' or gene == '0':
+        if C.CELL_DICT[gene] == C.EYES or C.CELL_DICT[gene] == C.FEED:
             return idx_dna
         for i in range(4):
             ori = C.ORIENTATIONS[i]
@@ -110,5 +111,4 @@ class Trilobit:
             self.body[r, c] = C.CELL_DICT[v]
         for i, cell_type in enumerate(C.CELLS):
             n_cells = np.count_nonzero(self.body == cell_type)
-            self.dna_cost += n_cells * C.CELLS_COST[i]
-
+            self.dna_cost += n_cells * C.CELLS_COST[i] * C.COST_FACTOR

@@ -25,6 +25,7 @@ class Model(nn.Module):
 
 
 # TODO: Dynamic model architecture
+# TODO: Decouple decision making and so it is agnostic of the model
 class Brain:
     def __init__(self):
         self.brain = Model()
@@ -38,7 +39,7 @@ class Brain:
 
     # TODO: Maybe normalize inputs?
     def init_perception(self, perception):
-        # TODO: See if we can work with half-precision
+        # TODO: See if we can work with half-precision or even INT8
         self.perception = torch.flatten(torch.from_numpy(perception.astype(np.float32)))
 
     def decision(self):
@@ -72,7 +73,7 @@ class Brain:
             diff = ret - value
             actor_losses.append(-log_prob * diff)
             critic_losses.append(
-                self.huber(torch.unsqueeze(value, dim=0), torch.Tensor([ret]))
+                self.huber(value, torch.Tensor([ret]))
             )
         # Backpropagation
         loss_value = sum(actor_losses) + sum(critic_losses)
