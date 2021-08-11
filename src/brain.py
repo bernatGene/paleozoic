@@ -50,10 +50,13 @@ class Brain:
         self.critic_values_memories.append(critic)
         return action.item()
 
-    def remember_reward(self, reward, perception):
+    def remember_reward(self, reward):
+        """
+        Write the reward for the last action and perception to the agent's memory.
+        :param reward: The reward for the last action.
+        :return: None
+        """
         self.rewards_memories.append(reward)
-        if perception is not None:
-            self.init_perception(perception[0])
 
     def dream(self):
         returns = []

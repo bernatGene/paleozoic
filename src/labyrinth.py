@@ -53,10 +53,13 @@ class Labyrinth:
         c = pos[1] - (shape[1] // 2)
         return self.crop_at_position((r, c), shape)
 
-    def crop_at_position(self, pos, shape):
-        return self.field[pos[0]:pos[0] + shape[0], pos[1]:pos[1] + shape[1]].copy()
+    def crop_at_position(self, pos, shape, copy=True):
+        if copy:
+            return self.field[pos[0]:pos[0] + shape[0], pos[1]:pos[1] + shape[1]].copy()
+        return self.field[pos[0]:pos[0] + shape[0], pos[1]:pos[1] + shape[1]]
 
     def valid_agent_position(self, agent_body, agent_pos, agent_ori):
+        # TODO: Test thoroughly, ~~i think i saw some weird behaviour.~~ definitely a bug somewhere
         body = np.rot90(agent_body, -C.ORIENTATIONS.index(agent_ori))
         vr, vc = C.body_coordinates_vector(agent_body, agent_ori)
         row = agent_pos[0] + vr
@@ -76,3 +79,12 @@ class Labyrinth:
         replace = self.field[row:row + body.shape[0], col:col + body.shape[1]]
         replace[consumed_mask] = C.NONE
         return True, consumed
+
+    def decompose(self, agent_body, agent_pos, agent_ori):
+        body = np.rot90(agent_body, -C.ORIENTATIONS.index(agent_ori))
+        vr, vc = C.body_coordinates_vector(agent_body, agent_ori)
+        row = agent_pos[0] + vr
+        col = agent_pos[1] + vc
+        crop = self.crop_at_position((row, col), body.shape, copy=False)
+        body_mask = (body != C.EMPTY)
+        crop[body_mask] = C.FOOD

@@ -8,13 +8,16 @@ class Trilobit:
     def __init__(self, dna="#", num_acts=3):
         self.dna = dna
         self.dna_cost = C.COST_HEAD * C.COST_FACTOR
-        self.body = None
+        self.body = self.build_body()
         self.num_actions = num_acts
         self.craneum = Brain()
         self.perception_shape = None
         self.energy = C.INITIAL_ENERGY
         self.day_reward = 0
         self.overall_reward = 0
+
+    def is_dead(self):
+        return self.energy <= 0
 
     def get_perception_shape(self):
         if self.perception_shape is None:
@@ -27,14 +30,21 @@ class Trilobit:
             return inputs
         return self.perception_shape
 
-    # TODO: Rethink if this is necessary
-    def init_model(self, perception):
+    def set_perception(self, perception):
+        """
+        Set the model inputs to the current perception of the agent.
+        :param perception: The array with shape self.perception_shape representing the current perception
+        :return: None
+        """
         self.craneum.init_perception(perception[0])
 
-    def reset_state(self, perception):
+    def reset_state(self):
+        """
+        Reset the agents state to have full energy and zero reward.
+        :return: None
+        """
         self.energy = C.INITIAL_ENERGY
         self.day_reward = 0
-        self.craneum.init_perception(perception[0])
 
     def act(self):
         a_index = self.craneum.decision()
@@ -45,31 +55,31 @@ class Trilobit:
             self.energy -= 0.75 * self.dna_cost
         return action_const
 
-    def react(self, reward, perception):
+    def react(self, reward):
         """
         Agent reacts to the action it just took. Its energy is updated and the reward imprinted in its memory.
         :param reward: The reward for the action taken, can be positive or negative.
-        :param perception: The perception around the position of the agent.
         :return: False if the agent is dead as a result. True otherwise.
         """
         self.energy += reward
         self.energy -= self.dna_cost
-        self.craneum.remember_reward(reward, perception)
+        self.craneum.remember_reward(reward)
         self.day_reward += reward
         if self.energy < 0:
             return False
         return True
 
-    def passive_react(self, reward):
-        """
-        When a passive agent is intersected by a moving agent, the resulting reward (or punishment) is imprinted into
-        its memory.
-        :param reward:
-        :return:
-        """
-        # print(f"{self.dna} got intersected!")
-        self.energy += reward
-        self.craneum.remember_reward(reward, None)
+    # TODO: remove if unneeded.
+    # def passive_react(self, reward):
+    #     """
+    #     When a passive agent is intersected by a moving agent, the resulting reward (or punishment) is imprinted into
+    #     its memory.
+    #     :param reward:
+    #     :return:
+    #     """
+    #     # print(f"{self.dna} got intersected!")
+    #     self.energy += reward
+    #     self.craneum.remember_reward(reward)
 
     def dream(self):
         self.overall_reward = 0.05 * self.day_reward + (1 - 0.05) * self.overall_reward  # todo: why negative?
@@ -95,7 +105,7 @@ class Trilobit:
         gene_pos = (0, 0)
         cell_dict = {}
         self.grow_gene(-1, cell_dict, gene_pos)
-        self.array_body(cell_dict)
+        return self.array_body(cell_dict)
 
     def array_body(self, cell_dict):
         max_r = max([k[0] for k in cell_dict.keys()])
@@ -104,11 +114,12 @@ class Trilobit:
         min_c = min([k[1] for k in cell_dict.keys()])
         rows = max_r - min_r + 1
         cols = max_c - min_c + 1
-        self.body = np.zeros((rows, cols), dtype=np.int8)
+        body = np.zeros((rows, cols), dtype=np.int8)
         for k, v in cell_dict.items():
             r = k[0] - min_r
             c = k[1] - min_c
-            self.body[r, c] = C.CELL_DICT[v]
+            body[r, c] = C.CELL_DICT[v]
         for i, cell_type in enumerate(C.CELLS):
-            n_cells = np.count_nonzero(self.body == cell_type)
+            n_cells = np.count_nonzero(body == cell_type)
             self.dna_cost += n_cells * C.CELLS_COST[i] * C.COST_FACTOR
+        return body

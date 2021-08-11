@@ -12,14 +12,14 @@ EMPTY = 0  # TODO: Difference between Empty and None? How much do we depend on t
 CELLS = [HEAD, BODY, EYES, FEED]
 
 FOOD_VALUE = 10
-MEAT_FACTOR = 3
-INVALID_PUNISH = -10
+MEAT_FACTOR = 5
+INVALID_PUNISH = -5
 INITIAL_ENERGY = 100
 COST_HEAD = 100
-COST_FEED = 20
+COST_FEED = 10
 COST_BODY = 1
-COST_EYES = 20
-COST_FACTOR = 0.01
+COST_EYES = 30
+COST_FACTOR = 0.005
 
 CELLS_COST = [COST_HEAD, COST_FEED, COST_BODY, COST_EYES]
 
@@ -59,17 +59,18 @@ ASCII_DICT = {WALL: '■', FOOD: '@', NONE: '.',
 def interaction_outcome(c_a, c_b):
     """
     Given two cell types which are intersecting, returns the effect to be given to each agent.
+    For now, only extra mouths can predate.
     :param c_a: Cell type of agent A, must be strictly in [CELLS] list
     :param c_b: Cell type of agent B, must be strictly in [CELLS] list
     :return: Reward or punishment to each agent respectively
     """
-    if c_a in [FEED, HEAD] and c_b in [FEED, HEAD]:
-        return -1, -1
-    if c_a in [FEED, HEAD]:
+    if c_a == FEED and c_b == FEED:
+        return -FOOD_VALUE, -FOOD_VALUE
+    if c_a == FEED:
         return FOOD_VALUE * MEAT_FACTOR, - FOOD_VALUE * MEAT_FACTOR
-    if c_b in [FEED, HEAD]:
+    if c_b == FEED:
         return - FOOD_VALUE * MEAT_FACTOR, FOOD_VALUE * MEAT_FACTOR
-    return 0, 0
+    return -1, -1
 
 
 def is_cell(c):

@@ -45,7 +45,6 @@ class Viewer:
         self.day = []
 
     def field_at_step(self, step):
-        # TODO: add color for intersections.
         field = self.field.copy()
         for r, c in self.day[step]["food_pos"]:
             field[r, c] = C.FOOD
@@ -65,12 +64,13 @@ class Viewer:
             for (p0, p1) in body_list:
                 if crop[p0, p1] in C.CELLS:
                     colormap[(p0 + r, p1 + c)] = C.OVERLAP
-                if ene < 0:
+                elif ene <= 0:
                     colormap[(p0 + r, p1 + c)] = C.DEAD
                 else:
                     colormap[(p0 + r, p1 + c)] = C.COLORS[i % (len(C.COLORS))]
-            crop[body_mask] = C.EMPTY
-            crop += body
+            if ene > 0:
+                crop[body_mask] = C.EMPTY
+                crop += body
             energies += f'Agent {i}: {ene:5.3f} | '
         heading = f'Day step: {step:04d} \n'
         return heading + energies + '\n' + field_to_string(field, colormap)

@@ -1,6 +1,9 @@
 ## Log
 
 * Should start testing new code.
+
+* There's a weird bug in food consumption. Some positions don't 
+    allow for the agent to get the food. 
 * ~~**Simultaneous actions or by turns???**~~
     * Simultaneous:
         * Agent map (no walls), sum overlaps
@@ -13,28 +16,31 @@
             * Keep an intersection_dict for each intersection
             encountered (bool map of occupied cells)
         * Deliver rewards and penalties
-    
+      
 
 ## Desired features:
 
 * Allow for saving models.
+
+* Allow for counter-clockwise rotation, otherwise some agents
+can get themselves in a stalemate against the wall. 
   
 * Add predation:
-    * Define interaction rules
+    ~~* Define interaction rules~~
         * ~~When an agent is predated on, the reward
           (negative) should be subtracted from the last
           move, since it is what got the agent into
           the situation~~.
         * ~~Agents can intersect, interaction rules
         define what happens when they do~~
-        * Be careful with how to interact with corpses.
-    * Add ability for agents to see each other
-      * Add agent intersection function
+        ~~* Be careful with how to interact with corpses.~~
+    ~~* Add ability for agents to see each other~~
+      ~~* Add agent intersection function
         * Intersection should be done with a map copy
-      without walls and the bodies in it
+      without walls and the bodies in it~~
           
     * Add dummy "herbivore" agents
-* Make map much bigger
+* Make map bigger 
     * Better tiling system
     * Safe spawn zones
         * Define a function to generate a list of
@@ -43,14 +49,18 @@
     * Grid-like agent positions to optimize 
     interaction determination
       
-    * Add the possiblity to transform map into png.
+    * Add the possibility to transform map into png.
     * For terminal viewer, maybe allow navigating ?
         * Maybe in streamlit ?
+        * Add a log of what happened on each step, for debugging. 
     
 * Add dynamic perception
     * Add dynamic models (hard)
         * Models should be "mergeable"
 
+* Add evolution
+    * keep a genealogical record
+  
 * Design training pipeline where for each x epochs,
 the latest day is shown and played back on the terminal
   * Maybe with Streamlit ? 
